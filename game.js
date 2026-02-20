@@ -224,9 +224,24 @@ function shuffle(arr) {
 
 function getCard(id) { return CARDS.find(c => c.id === id); }
 
+function isMobileLayout() { return window.innerWidth <= 700; }
+
+// True touch/mobile detection using CSS media query — reliable on M-series Macs too
+// pointer:coarse = finger/stylus. pointer:fine = mouse. Doesn't change on resize.
+function isTouchPrimary() {
+  return window.matchMedia('(pointer: coarse)').matches;
+}
+
 function showScreen(id) {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   document.getElementById(id).classList.add('active');
+}
+
+// Haptic feedback (mobile only, silent on desktop)
+function haptic(pattern) {
+  if ('vibrate' in navigator) {
+    try { navigator.vibrate(pattern); } catch (_) {}
+  }
 }
 
 function flashCritical() {
@@ -278,10 +293,28 @@ function init() {
   el('btn-true-restart').addEventListener('click', restart);
 }
 
+// ─── Responsive helpers ───────────────────────────────────────────────────────
+
+function updateBoosterHint() {
+  const hint = el('booster-hint');
+  if (!hint || hint.textContent === '') return; // already opened
+  hint.textContent = isMobileLayout() ? 'Tap the pack to open' : 'Click the pack to open';
+}
+
+function updateRevealSub() {
+  const desktop = document.querySelector('.reveal-sub-desktop');
+  const mobile  = document.querySelector('.reveal-sub-mobile');
+  if (!desktop || !mobile) return;
+  const isMob = isMobileLayout();
+  desktop.style.display = isMob ? 'none' : '';
+  mobile.style.display  = isMob ? '' : 'none';
+}
+
 // ─── Intro → Booster ─────────────────────────────────────────────────────────
 
 function showBooster() {
   showScreen('screen-booster');
+  updateBoosterHint();
 }
 
 function openBooster() {
@@ -315,6 +348,7 @@ function openBooster() {
 function showReveal() {
   const revealWrap = el('reveal-wrap');
   revealWrap.classList.add('visible');
+  updateRevealSub();
 
   const container = el('reveal-cards');
   container.innerHTML = '';
@@ -374,6 +408,10 @@ function renderHP() {
 // ─── Render current attack ────────────────────────────────────────────────────
 
 function renderAttack() {
+  // Clear any lingering selection/preview from previous round
+  document.querySelectorAll('.hand-card').forEach(c => c.classList.remove('selected'));
+  hideCardPreview();
+
   const attack = state.attackOrder[state.round];
   el('round-num').textContent = state.round + 1;
   el('attack-name').textContent = attack.name;
@@ -429,9 +467,25 @@ function renderHand() {
     div.addEventListener('mouseenter', () => showCardPreview(card));
     div.addEventListener('mouseleave', hideCardPreview);
 
-    // Click → play card (only if playable)
+    // Click / touch → play card (only if playable)
     if (isPlayable) {
-      div.addEventListener('click', (e) => playCard(card.id, div, e));
+      // touchstart: record position so we can skip drags in touchend
+      let _ts = { x: 0, y: 0 };
+      div.addEventListener('touchstart', e => {
+        _ts = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+      }, { passive: true });
+
+      // touchend: direct handler bypasses iOS scroll-container click suppression.
+      // preventDefault() stops the synthetic click from double-firing.
+      div.addEventListener('touchend', e => {
+        e.preventDefault();
+        const t = e.changedTouches[0];
+        if (Math.abs(t.clientX - _ts.x) > 8 || Math.abs(t.clientY - _ts.y) > 8) return;
+        playCard(card.id, div, { clientX: t.clientX, clientY: t.clientY });
+      }, { passive: false });
+
+      // click: mouse / desktop fallback (touchend preventDefault stops double-fire on touch)
+      div.addEventListener('click', e => playCard(card.id, div, e));
     }
 
     container.appendChild(div);
@@ -440,8 +494,11 @@ function renderHand() {
 
 function updateHandLabel() {
   const tried = state.roundTriedCards.length;
+  const mobile = isMobileLayout();
   if (tried === 0) {
-    el('hand-label').textContent = 'YOUR HAND : hover to inspect, click to play';
+    el('hand-label').textContent = mobile
+      ? 'TAP A CARD TO INSPECT AND PLAY'
+      : 'YOUR HAND : hover to inspect, click to play';
   } else if (tried <= 2) {
     el('hand-label').textContent = `${tried} wrong so far. Keep looking.`;
   } else {
@@ -451,8 +508,12 @@ function updateHandLabel() {
 
 // ─── CSS Card Preview ─────────────────────────────────────────────────────────
 
-function showCardPreview(card) {
+// Card currently shown in preview (used by the mobile PLAY button)
+let _previewCardId = null;
+
+function showCardPreview(card, { playable = false } = {}) {
   if (!card) return;
+  _previewCardId = card.id;
   const preview = el('card-preview');
 
   el('cp-name').textContent = card.name;
@@ -475,46 +536,86 @@ function showCardPreview(card) {
     }).join('');
   }
 
+  // Mobile bottom-sheet: add PLAY button + backdrop
+  const existingBtn = preview.querySelector('.cp-play-btn');
+  const existingHint = preview.querySelector('.cp-cancel-hint');
+  if (existingBtn) existingBtn.remove();
+  if (existingHint) existingHint.remove();
+
+  if (isMobileLayout() && playable) {
+    const playBtn = document.createElement('button');
+    playBtn.className = 'cp-play-btn';
+    playBtn.textContent = '▶  PLAY THIS CARD';
+    playBtn.addEventListener('click', () => {
+      const handCard = document.querySelector(`.hand-card[data-id="${card.id}"]`);
+      if (handCard) {
+        // Simulate a play — bypass selection check since user explicitly tapped PLAY
+        hideCardPreview();
+        playCardById(card.id, handCard, { clientX: window.innerWidth / 2, clientY: window.innerHeight / 2 });
+      }
+    });
+    preview.appendChild(playBtn);
+
+    const hint = document.createElement('span');
+    hint.className = 'cp-cancel-hint';
+    hint.textContent = 'tap backdrop to cancel';
+    hint.addEventListener('click', () => {
+      hideCardPreview();
+      if (el('screen-game')?.classList.contains('active')) updateHandLabel();
+    });
+    preview.appendChild(hint);
+
+    // Backdrop
+    showBackdrop();
+  }
+
   preview.classList.add('visible');
-  preview.style.display = 'block'; // force visibility
+  preview.style.display = 'block';
 }
 
 function hideCardPreview() {
+  _previewCardId = null;
   const preview = el('card-preview');
   preview.classList.remove('visible');
   preview.style.display = 'none';
+  // Remove any injected play button / cancel hint
+  preview.querySelectorAll('.cp-play-btn, .cp-cancel-hint').forEach(e => e.remove());
+  hideBackdrop();
+}
+
+function showBackdrop() {
+  if (document.querySelector('.preview-backdrop')) return;
+  const bd = document.createElement('div');
+  bd.className = 'preview-backdrop';
+  bd.addEventListener('click', () => {
+    hideCardPreview();
+    document.querySelectorAll('.hand-card').forEach(c => c.classList.remove('selected'));
+    if (el('screen-game')?.classList.contains('active')) updateHandLabel();
+  });
+  document.body.appendChild(bd);
+}
+
+function hideBackdrop() {
+  document.querySelector('.preview-backdrop')?.remove();
 }
 
 // ─── Play a card ──────────────────────────────────────────────────────────────
 
-function playCard(cardId, cardEl, event) {
+// playCardById: the actual play logic (called from PLAY button on mobile, or direct click on desktop)
+function playCardById(cardId, cardEl, event) {
   if (state.roundResolved) return;
-
-  // Mobile/Touch: First tap selects and shows preview, second tap plays.
-  const isSelected = cardEl.classList.contains('selected');
-  const isTouch = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
-
-  if (isTouch && !isSelected) {
-    // Deselect others
-    document.querySelectorAll('.hand-card').forEach(c => c.classList.remove('selected'));
-    // Select this one
-    cardEl.classList.add('selected');
-    showCardPreview(getCard(cardId));
-    
-    // Update label to hint at second tap
-    el('hand-label').textContent = 'TAP AGAIN TO PLAY';
-    return;
-  }
 
   const card = getCard(cardId);
   const attack = state.attackOrder[state.round];
   const isPerfect = cardId === attack.bestCard;
   const isAlt = cardId === attack.altCard;
 
+  // Deselect all and hide preview before playing
+  document.querySelectorAll('.hand-card').forEach(c => c.classList.remove('selected'));
   hideCardPreview();
 
   if (!isPerfect && !isAlt) {
-    // Wrong card : show hint, mark as tried, don't advance
+    // Wrong card : preview already hidden above; show hint and mark as tried
     state.roundTriedCards.push(cardId);
     cardEl.classList.add('tried');
     cardEl.querySelector('img').classList.add('shaking');
@@ -522,6 +623,7 @@ function playCard(cardId, cardEl, event) {
 
     // Show floating MISS
     showFloatingText('MISS', event.clientX, event.clientY);
+    haptic([30, 30, 30]); // rapid triple buzz for miss
 
     // Show wrong-card hint
     const triedCount = state.roundTriedCards.length;
@@ -550,8 +652,10 @@ function playCard(cardId, cardEl, event) {
     setTimeout(flashCritical, 200);
     showFloatingText('CRITICAL!', event.clientX, event.clientY, true);
     shakeScreen();
+    haptic([80, 40, 120]); // strong double-pulse for critical
   } else {
     showFloatingText('OK!', event.clientX, event.clientY);
+    haptic(50); // single short buzz for OK
   }
 
   // Animate card played
@@ -573,6 +677,32 @@ function playCard(cardId, cardEl, event) {
     renderHand();
     updateHandLabel();
   }, 320);
+}
+
+// playCard: entry point from hand card click listener
+// Desktop  → play immediately on click
+// Mobile   → first tap shows bottom-sheet preview + PLAY button; PLAY button calls playCardById
+function playCard(cardId, cardEl, event) {
+  if (state.roundResolved) return;
+
+  if (isTouchPrimary() && isMobileLayout()) {
+    // Mobile: tap shows card details in a bottom sheet with a PLAY button.
+    // If this same card is already selected (sheet already open), play it directly.
+    const isSelected = cardEl.classList.contains('selected');
+    if (!isSelected) {
+      // Deselect others, select this card, show preview sheet
+      document.querySelectorAll('.hand-card').forEach(c => c.classList.remove('selected'));
+      cardEl.classList.add('selected');
+      showCardPreview(getCard(cardId), { playable: true });
+      haptic(30);
+      el('hand-label').textContent = 'TAP ▶ PLAY TO USE THIS CARD';
+      return;
+    }
+    // Second tap on the already-selected card → play it (fallthrough)
+    hideCardPreview();
+  }
+
+  playCardById(cardId, cardEl, event);
 }
 
 // ─── Monster animation ────────────────────────────────────────────────────────
@@ -871,5 +1001,19 @@ function showTrueWin() {
 }
 
 // ─── Boot ─────────────────────────────────────────────────────────────────────
+
+// Responsive label updates on window resize (debounced)
+let _resizeTimer;
+window.addEventListener('resize', () => {
+  clearTimeout(_resizeTimer);
+  _resizeTimer = setTimeout(() => {
+    updateBoosterHint();
+    updateRevealSub();
+    // Refresh hand label if game is active
+    if (el('screen-game').classList.contains('active')) {
+      updateHandLabel();
+    }
+  }, 120);
+});
 
 document.addEventListener('DOMContentLoaded', init);

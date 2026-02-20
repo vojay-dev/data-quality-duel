@@ -30,12 +30,19 @@ body {
   background: var(--navy);
   color: var(--text);
   min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* Fixed background via pseudo-element: GPU-accelerated, no iOS jitter */
+body::before {
+  content: '';
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
   background-image: url('images/background.svg');
   background-size: cover;
   background-position: center center;
-  background-attachment: fixed;
-  background-repeat: no-repeat;
-  overflow-x: hidden;
+  z-index: -1;
+  pointer-events: none;
 }
 
 /* ─── Screens ─── */
@@ -786,6 +793,7 @@ body {
   user-select: none;
   -webkit-touch-callout: none;
   -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
   flex-shrink: 0;
   width: 108px;
   cursor: pointer;
@@ -1760,7 +1768,7 @@ img.shaking { animation: imgShake .35s ease; }
   position: relative;
   width: 200px;
   height: 340px;
-  filter: drop-shadow(0 16px 40px rgba(139,92,246,.45));
+  /* No filter here: filter+clip-path causes dark rectangle artifact on iOS */
 }
 
 /* Pre-tear jiggle */
@@ -1780,6 +1788,7 @@ img.shaking { animation: imgShake .35s ease; }
   position: absolute;
   inset: 0;
   transition: transform .5s cubic-bezier(.4,0,.2,1);
+  will-change: transform; /* GPU layer prevents clip-path artifact on iOS */
 }
 
 .pack-inner {
@@ -1796,6 +1805,8 @@ img.shaking { animation: imgShake .35s ease; }
   border-radius: 12px;
   border: 2px solid rgba(139,92,246,.6);
   overflow: hidden;
+  /* Shadow moved here from parent to avoid filter+clip-path iOS artifact */
+  box-shadow: 0 16px 40px rgba(139,92,246,.35);
 }
 
 /* Foil shimmer overlay */
@@ -1991,6 +2002,12 @@ img.shaking { animation: imgShake .35s ease; }
 
 /* ─── Responsive ─── */
 
+/* Use dynamic viewport height where supported (fixes mobile address-bar clipping) */
+@supports (height: 100dvh) {
+  .screen { min-height: 100dvh; }
+  .game-layout { min-height: 100dvh; }
+}
+
 /* Tablet / large phone */
 @media (max-width: 900px) {
   .game-arena { gap: 16px; }
@@ -1999,48 +2016,226 @@ img.shaking { animation: imgShake .35s ease; }
   .reveal-cards { gap: 8px; }
   .css-pack-container { width: 180px; height: 306px; }
   .css-pack { width: 180px; height: 306px; }
-  .pack-half { clip-path: none; } /* simplify clip on small screens */
   .pack-top  { clip-path: polygon(0 0, 180px 0, 180px 81px, 157px 74px, 133px 85px, 106px 70px, 79px 83px, 52px 71px, 25px 84px, 0 77px); }
   .pack-bottom { clip-path: polygon(0 77px, 25px 84px, 52px 71px, 79px 83px, 106px 70px, 133px 85px, 157px 74px, 180px 81px, 180px 306px, 0 306px); }
   .pack-flash { top: 69px; }
   .pack-cards-burst { top: 78px; left: 90px; }
 }
 
-/* Phone */
+/* ── Phone layout ── */
 @media (max-width: 700px) {
-  .game-layout { padding: 0 12px 12px; }
-  .game-arena { flex-direction: column; gap: 12px; flex: 1; }
-  .monster-col { width: 100%; flex-direction: row; justify-content: center; align-items: center; gap: 16px; padding: 0; }
-  .monster-hp-wrap { align-items: flex-start; }
-  .game-monster { width: clamp(60px, 15vw, 90px); }
-  .hand-card { width: clamp(60px, 14vw, 100px); }
-  .hand-cards { gap: clamp(4px, 1vw, 10px); padding-bottom: 0; }
-  .card-preview { 
-    width: min(340px, 94vw); 
-    bottom: 280px; 
-    z-index: 600; 
-    pointer-events: none; /* Allow taps to pass through to cards below */
+
+  .game-layout {
+    padding: 0 12px 0;
+    height: 100vh;
+    height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    /* NO overflow:hidden — position:fixed card preview must stay free */
   }
+
+  /* Topbar: compact single line */
+  .game-topbar {
+    padding: 10px 8px;
+    flex-shrink: 0;
+  }
+
+  /* Arena: stacked, scrollable if content overflows */
+  .game-arena {
+    flex-direction: column;
+    gap: 10px;
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding: 8px 0 4px;
+  }
+
+  /* Monster strip: horizontal compact bar */
+  .monster-col {
+    width: 100%;
+    flex-direction: row;
+    justify-content: flex-start;
+    align-items: center;
+    gap: 14px;
+    padding: 0 4px;
+    flex-shrink: 0;
+  }
+  .monster-hp-wrap { align-items: flex-start; gap: 2px; }
+  .hp-label { font-size: .55rem; }
+  .monster-hp { gap: 2px; }
+  .heart { font-size: 1.1rem; }
+  .round-badge { font-size: .58rem; padding: 3px 8px; }
+  .game-monster { width: clamp(52px, 13vw, 80px); }
+
+  /* Attack box: tighter on mobile */
+  .attack-box { padding: 12px 14px; }
+  .attack-name { font-size: 1.05rem; }
+  .speech-bubble {
+    padding: 8px 12px;
+    font-size: .85rem;
+    margin-bottom: 8px;
+    line-height: 1.5;
+  }
+  .attack-hint { font-size: .78rem; }
+
+  /* Result box: compact */
+  .result-box { padding: 16px; gap: 10px; }
+  .result-text { font-size: .92rem; }
+
+  /* Hand section: always at bottom, never scrolls */
+  .hand-section {
+    flex-shrink: 0;
+    padding-top: 10px;
+    padding-bottom: 0;
+    background: linear-gradient(to bottom, transparent, rgba(30,34,53,.6) 20%);
+  }
+
+  /* Cards: fill the row evenly, min touch target ~44px */
+  .hand-cards {
+    gap: clamp(4px, 1.2vw, 10px);
+    padding: 6px 2px 0;
+    overflow-x: auto;
+    overflow-y: visible;
+    scrollbar-width: none;
+  }
+  .hand-cards::-webkit-scrollbar { display: none; }
+
+  .hand-card { width: clamp(62px, 14.5vw, 102px); }
+
+  /* Selected card: strong visual confirmation */
+  .hand-card.selected {
+    transform: translateY(-32px) scale(1.12);
+    z-index: 50;
+  }
+  .hand-card.selected img {
+    box-shadow:
+      0 14px 32px rgba(139,92,246,.6),
+      0 0 0 2px var(--purple-light),
+      0 0 20px rgba(139,92,246,.5);
+  }
+
+  .hand-label {
+    font-size: .58rem;
+    margin-top: 20px;
+    margin-bottom: 48px; /* clears footer + safe area */
+    letter-spacing: .06em;
+  }
+
+  /* Card preview: fixed bottom sheet above the hand
+     pointer-events: auto so users can interact with it
+     Does NOT use overflow:hidden ancestor, avoids iOS fixed-child trap */
+  .card-preview {
+    width: 100%;
+    max-width: 100%;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    transform: none;
+    border-radius: 18px 18px 0 0;
+    border-left: none;
+    border-right: none;
+    border-bottom: none;
+    z-index: 600;
+    pointer-events: auto;
+    animation: previewSlideUp .22s cubic-bezier(0.16, 1, 0.3, 1);
+    box-shadow: 0 -8px 40px rgba(0,0,0,.7), 0 0 0 1px rgba(139,92,246,0.3);
+  }
+
+  /* Compact preview content on mobile */
+  .cp-code { font-size: .6rem; line-height: 1.5; }
+  .cp-art svg { height: 44px; }
+
+  /* Play button injected into preview on mobile */
+  .cp-play-btn {
+    display: block;
+    width: calc(100% - 28px);
+    margin: 12px 14px 14px;
+    padding: 14px;
+    background: var(--purple);
+    color: #fff;
+    border: none;
+    border-radius: 10px;
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 1rem;
+    font-weight: 700;
+    letter-spacing: .04em;
+    cursor: pointer;
+    box-shadow: 0 4px 20px var(--glow-purple);
+    -webkit-tap-highlight-color: transparent;
+    transition: background .15s, transform .1s;
+  }
+  .cp-play-btn:active { background: var(--purple-dark); transform: scale(0.98); }
+
+  /* Cancel label below play button */
+  .cp-cancel-hint {
+    display: block;
+    text-align: center;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: .58rem;
+    color: var(--text-dim);
+    letter-spacing: .08em;
+    padding-bottom: 10px;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* Backdrop: semi-transparent overlay BEHIND the preview sheet */
+  .preview-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.55);
+    z-index: 599;
+    backdrop-filter: blur(2px);
+    animation: backdropIn .2s ease;
+  }
+  @keyframes backdropIn {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+  }
+
+  /* Observe / Twist screens */
   .obs-arena { flex-direction: column; }
   .observe-card { width: 100%; }
-  .twist-arena { flex-direction: column; }
+  .twist-arena { flex-direction: column; gap: 16px; }
   .obs-header { flex-direction: column; }
-  .reveal-card { width: clamp(80px, 25vw, 110px); }
+
+  /* Reveal screen: bigger cards for easier inspection */
+  .reveal-card { width: clamp(90px, 26vw, 120px); }
+  .reveal-cards { gap: clamp(6px, 1.5vw, 12px); }
+
+  /* Footer */
   .global-footer { gap: 8px; }
   .footer-label { display: none; }
+
+  /* Reveal subtitle dual text */
+  .reveal-sub-desktop { display: none; }
+  .reveal-sub-mobile  { display: block; }
+
+  /* Win/twist screens: full-bleed comfortable padding */
+  .win-wrap, .true-win-wrap { padding: 32px 20px 80px; }
+  .twist-wrap { padding: 24px 16px; gap: 16px; }
 }
 
-/* Very small phones */
+/* Mobile preview slide animation (bottom sheet) */
+@keyframes previewSlideUp {
+  from { opacity: 0; transform: translateY(40px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ── Very small phones (≤480px) ── */
 @media (max-width: 480px) {
-  .game-layout { padding: 0 10px 10px; }
-  .game-arena { padding-top: 10px; gap: 8px; }
-  .attack-box { padding: 12px 14px; }
-  .speech-bubble { padding: 8px 12px; font-size: 0.8rem; margin-bottom: 8px; }
-  .hand-card { width: clamp(60px, 17vw, 85px); }
-  .game-topbar { flex-direction: column; gap: 4px; padding: 8px 12px; }
+  .game-layout { padding: 0 10px 0; }
+  .game-arena { gap: 8px; padding: 6px 0 4px; }
+  .attack-box { padding: 10px 12px; }
+  .attack-name { font-size: .95rem; }
+  .speech-bubble { font-size: .8rem; padding: 7px 10px; margin-bottom: 6px; }
+  .hand-card { width: clamp(58px, 15.5vw, 84px); }
+  .hand-label { margin-bottom: 52px; }
+  .game-topbar { padding: 8px; }
   .reveal-cards { gap: 6px; }
-  .reveal-card { width: clamp(72px, 28vw, 100px); }
-  .card-preview { bottom: 240px; }
+  .reveal-card { width: clamp(76px, 27vw, 104px); }
+  /* card-preview inherits full-width bottom sheet from 700px breakpoint */
   .css-pack-container, .css-pack { width: 160px; height: 272px; }
   .pack-top  { clip-path: polygon(0 0, 160px 0, 160px 72px, 140px 65px, 118px 76px, 94px 62px, 70px 74px, 46px 63px, 22px 75px, 0 68px); }
   .pack-bottom { clip-path: polygon(0 68px, 22px 75px, 46px 63px, 70px 74px, 94px 62px, 118px 76px, 140px 65px, 160px 72px, 160px 272px, 0 272px); }
