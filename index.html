@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Data Quality Duel</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- ─── INTRO SCREEN ─── -->
+  <div id="screen-intro" class="screen active">
+    <div class="intro-wrap">
+      <div class="intro-badge">DATA QUALITY DUEL</div>
+      <h1 class="intro-title">Data Quality<br>Duel</h1>
+      <p class="intro-sub">
+        The AstroTrips interplanetary routes are in trouble. The DQ Monster is trashing your warehouse and every booking to the Moon is breaking.
+      </p>
+      <img src="images/dq-monster.webp" alt="DQ Monster" class="intro-monster">
+      <p class="intro-sub" style="font-size: 0.9rem; opacity: 0.8;">
+        Play the right Airflow operators to stop the corruption. 6 operators, 6 attacks. Find the right match.
+      </p>
+      <button class="btn-primary" id="btn-open-booster">Open Your Booster Pack</button>
+    </div>
+  </div>
+
+  <!-- ─── BOOSTER SCREEN ─── -->
+  <div id="screen-booster" class="screen">
+    <div class="booster-wrap" id="booster-wrap">
+      <p class="booster-label">Your deck is ready.</p>
+
+      <!-- CSS booster pack : two halves, tears apart on click -->
+      <div class="css-pack-container" id="css-pack-container">
+        <div class="css-pack" id="css-pack">
+          <!-- Top half (flies up on tear) -->
+          <div class="pack-half pack-top" id="pack-top">
+            <div class="pack-inner">
+              <div class="pack-foil"></div>
+              <div class="pack-logo-area">
+                <div class="pack-logo-text">DQ</div>
+                <div class="pack-logo-sub">DATA QUALITY DUEL</div>
+              </div>
+              <div class="pack-tear-edge top"></div>
+            </div>
+          </div>
+          <!-- Bottom half (drops on tear) -->
+          <div class="pack-half pack-bottom" id="pack-bottom">
+            <div class="pack-inner">
+              <div class="pack-foil"></div>
+              <div class="pack-art">
+                <!-- Orbital rings decoration -->
+                <svg viewBox="0 0 160 200" xmlns="http://www.w3.org/2000/svg" class="pack-art-svg">
+                  <ellipse cx="80" cy="100" rx="70" ry="35" fill="none" stroke="rgba(255,255,255,0.18)" stroke-width="1.5"/>
+                  <ellipse cx="80" cy="100" rx="50" ry="22" fill="none" stroke="rgba(245,158,11,0.25)" stroke-width="1"/>
+                  <ellipse cx="80" cy="100" rx="30" ry="13" fill="none" stroke="rgba(255,255,255,0.12)" stroke-width="1"/>
+                  <circle cx="80" cy="100" r="5" fill="#F59E0B"/>
+                  <circle cx="148" cy="97" r="3.5" fill="#10B981"/>
+                  <circle cx="30" cy="80" r="2.5" fill="#8B5CF6"/>
+                  <circle cx="115" cy="68" r="2.5" fill="#3B82F6"/>
+                </svg>
+              </div>
+              <div class="pack-footer-text">6 OPERATORS : LIMITED EDITION</div>
+              <div class="pack-tear-edge bottom"></div>
+            </div>
+          </div>
+        </div>
+        <!-- Flash at tear point -->
+        <div class="pack-flash" id="pack-flash"></div>
+        <!-- Cards burst from here -->
+        <div class="pack-cards-burst" id="pack-cards-burst"></div>
+      </div>
+
+      <p class="booster-hint" id="booster-hint">Click the pack to open</p>
+    </div>
+
+    <!-- Revealed after pack tears open : clean centered card grid -->
+    <div class="reveal-wrap" id="reveal-wrap">
+      <p class="reveal-title">Nice pull! Here is your hand.</p>
+      <div class="reveal-cards" id="reveal-cards"></div>
+      <p class="reveal-sub">Hover to inspect the code. Match the right card to the failure type.</p>
+      <button class="btn-primary" id="btn-start-game">Challenge the Monster →</button>
+    </div>
+  </div>
+
+  <!-- ─── GAME SCREEN ─── -->
+  <div id="screen-game" class="screen">
+    <div class="game-layout">
+
+      <div class="game-topbar">
+        <div class="topbar-left">
+          <span class="game-title">DATA QUALITY DUEL</span>
+        </div>
+        <div class="topbar-right">
+          <span class="score-label">CRITICAL CHECKS</span>
+          <span class="score-value" id="score-display">0 / 0</span>
+        </div>
+      </div>
+
+      <div class="game-arena">
+
+        <div class="monster-col">
+          <div class="monster-hp-wrap">
+            <span class="hp-label">MONSTER HP</span>
+            <div class="monster-hp" id="monster-hp"></div>
+          </div>
+          <img src="images/dq-monster.webp" alt="DQ Monster" class="game-monster" id="game-monster">
+          <div class="round-badge">ATTACK <span id="round-num">1</span> / 6</div>
+        </div>
+
+        <div class="center-col">
+
+          <div class="attack-box" id="attack-box">
+            <div class="attack-header">
+              <span class="attack-label">INCOMING ATTACK</span>
+              <span class="attack-name" id="attack-name">...</span>
+            </div>
+            <div class="speech-bubble" id="monster-speech">...</div>
+            <div class="attack-hint">
+              <span class="hint-icon">💡</span>
+              <span id="hint-text">...</span>
+            </div>
+          </div>
+
+          <div class="wrong-hint-box" id="wrong-hint-box">
+            <span class="wrong-hint-icon">⚠</span>
+            <span id="wrong-hint-text">...</span>
+          </div>
+
+          <div class="result-box" id="result-box">
+            <div class="result-badge" id="result-badge">...</div>
+            <div class="result-card-name" id="result-card-name"></div>
+            <div class="result-text" id="result-text"></div>
+            <div class="result-why" id="result-why"></div>
+            <button class="btn-secondary" id="btn-next">Next Attack →</button>
+          </div>
+
+        </div>
+
+      </div>
+
+      <div class="hand-section">
+        <div class="hand-label" id="hand-label">YOUR HAND : hover to inspect, click to play</div>
+        <div class="hand-cards" id="hand-cards"></div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ─── WIN SCREEN (round 1 of 2) ─── -->
+  <div id="screen-win" class="screen">
+    <div class="win-wrap">
+      <div class="win-badge">ROUND 1 COMPLETE</div>
+      <h1 class="win-title">Monster<br>Defeated!</h1>
+      <div class="win-score-box">
+        <div class="win-score-num" id="win-score-num">0 / 6</div>
+        <div class="win-score-label">Critical Checks</div>
+      </div>
+      <p class="win-message" id="win-message"></p>
+      <div class="win-recap" id="win-recap"></div>
+      <div class="win-actions">
+        <button class="btn-primary" id="btn-twist">CONTINUE →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── PLOT TWIST SCREEN ─── -->
+  <div id="screen-twist" class="screen">
+    <div class="twist-wrap">
+
+      <!-- Phase 1: Airflow eating scene -->
+      <div class="twist-arena" id="twist-arena">
+
+        <div class="airflow-zone" id="airflow-zone">
+          <div class="airflow-logo" id="airflow-logo">
+            <!-- Inline Airflow SVG -->
+            <svg viewBox="0 0 128 128" xmlns="http://www.w3.org/2000/svg">
+              <path d="m2.5441 127 60.809-62.332a1.124 1.124 0 0 0 0.1359-1.4368c-3.6977-5.1625-10.521-6.0578-13.05-9.5268-7.4903-10.275-9.3909-16.092-12.61-15.731a0.98374 0.98374 0 0 0-0.58464 0.3085l-21.966 22.518c-12.638 12.944-14.454 41.475-14.782 65.367a1.1908 1.1908 0 0 0 2.0473 0.83273z" fill="#017cee"/>
+              <path d="m126.99 125.46-62.332-60.813a1.124 1.124 0 0 0-1.4389-0.1359c-5.1625 3.6998-6.0578 10.521-9.5268 13.05-10.275 7.4903-16.092 9.3909-15.731 12.61a0.98374 0.98374 0 0 0 0.3085 0.58248l22.518 21.966c12.944 12.638 41.475 14.454 65.367 14.782a1.1908 1.1908 0 0 0 0.83489-2.0408z" fill="#00ad46"/>
+              <path d="m60.792 112.72c-7.076-6.9035-10.355-20.559 3.2058-48.719-22.046 9.8525-29.771 22.803-25.972 26.511z" fill="#04d659"/>
+              <path d="m125.45 1.0113-60.807 62.332a1.1218 1.1218 0 0 0-0.1359 1.4368c3.6998 5.1625 10.519 6.0578 13.05 9.5268 7.4903 10.275 9.393 16.092 12.61 15.731a0.97943 0.97943 0 0 0 0.58464-0.3085l21.966-22.518c12.638-12.944 14.454-41.475 14.782-65.367a1.193 1.193 0 0 0-2.0495-0.83273z" fill="#00c7d4"/>
+              <path d="m112.73 67.211c-6.9035 7.076-20.559 10.355-48.721-3.2058 9.8525 22.046 22.803 29.771 26.511 25.972z" fill="#11e1ee"/>
+              <path d="m1.0017 2.5495 62.332 60.807a1.124 1.124 0 0 0 1.4368 0.1359c5.1625-3.6998 6.0578-10.521 9.5268-13.05 10.275-7.4903 16.092-9.3909 15.731-12.61a0.99022 0.99022 0 0 0-0.3085-0.58463l-22.518-21.966c-12.944-12.638-41.475-14.454-65.367-14.782a1.1908 1.1908 0 0 0-0.83273 2.0495z" fill="#e43921"/>
+              <path d="m67.212 15.284c7.076 6.9035 10.355 20.559-3.2058 48.721 22.046-9.8525 29.771-22.805 25.972-26.511z" fill="#ff7557"/>
+              <path d="m15.279 60.8c6.9035-7.076 20.559-10.355 48.721 3.2058-9.8525-22.046-22.803-29.771-26.511-25.972z" fill="#0cb6ff"/>
+              <circle cx="64.009" cy="63.995" r="2.7182" fill="#4a4848"/>
+            </svg>
+            <div class="airflow-label">Apache Airflow</div>
+          </div>
+
+          <img src="images/dq-monster.webp" alt="DQ Monster" class="twist-monster" id="twist-monster">
+        </div>
+
+        <!-- Terminal output -->
+        <div class="terminal" id="terminal">
+          <div class="term-header">
+            <span class="term-dot red"></span>
+            <span class="term-dot yellow"></span>
+            <span class="term-dot green"></span>
+            <span class="term-title">airflow scheduler</span>
+          </div>
+          <div class="term-body" id="term-body"></div>
+        </div>
+
+      </div>
+
+      <!-- Monster speech -->
+      <div class="twist-speech" id="twist-speech">
+        <div class="twist-bubble" id="twist-bubble"></div>
+      </div>
+
+      <!-- CTA (appears after animation) -->
+      <div class="twist-cta" id="twist-cta">
+        <button class="btn-primary btn-observe" id="btn-observe">
+          Deploy Astro Observe →
+        </button>
+        <p class="twist-cta-sub">Your Dag-level operators can't run.<br>But platform-level monitoring can.</p>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ─── ASTRO OBSERVE BOSS SCREEN ─── -->
+  <div id="screen-observe" class="screen">
+    <div class="game-layout">
+      
+      <div class="game-topbar">
+        <div class="topbar-left">
+          <span class="game-title">PLATFORM-LEVEL DEFENSE</span>
+        </div>
+        <div class="topbar-right">
+          <span class="score-label">OBSERVE HP</span>
+          <span class="score-value" id="obs-hp" style="color: var(--heart-full); letter-spacing: 0.1em;">♥ ♥ ♥</span>
+        </div>
+      </div>
+
+      <div class="game-arena">
+        
+        <div class="monster-col">
+          <div class="monster-hp-wrap">
+            <span class="hp-label">TARGET SECURED</span>
+          </div>
+          <img src="images/dq-monster.webp" alt="Monster" class="game-monster" id="obs-monster">
+          <div class="round-badge" style="border-color: var(--gold); color: var(--gold);">BOSS FIGHT</div>
+        </div>
+
+        <div class="center-col">
+          <!-- Intro text -->
+          <div class="attack-box" id="obs-intro-box" style="margin-bottom: 12px; border-color: var(--gold-dark);">
+            <div class="attack-header">
+              <span class="attack-label" style="color: var(--gold);">AIRFLOW IS DOWN</span>
+              <span class="attack-name">Deploy the Platform Layer</span>
+            </div>
+            <p style="font-size: 0.85rem; color: var(--text-dim); line-height: 1.5;">
+              Operators can't run without a scheduler. Astro Observe connects directly to your warehouse to keep the defense alive.
+            </p>
+          </div>
+
+          <!-- The legendary Observe card -->
+          <div class="observe-card" id="observe-card">
+            <div class="oc-header">
+              <div class="oc-header-left">
+                <span class="oc-tier-badge">LEGENDARY</span>
+                <span class="oc-name">Astro Observe</span>
+              </div>
+              <span class="oc-star">★</span>
+            </div>
+
+            <div class="oc-art">
+              <svg viewBox="0 0 200 110" xmlns="http://www.w3.org/2000/svg">
+                <circle cx="15" cy="12" r="1" fill="white" opacity=".7"/>
+                <circle cx="185" cy="8" r="1.5" fill="white" opacity=".8"/>
+                <rect x="60" y="72" width="80" height="28" fill="none" stroke="rgba(245,158,11,.25)" stroke-width="1"/>
+                <line x1="100" y1="30" x2="100" y2="72" stroke="rgba(245,158,11,.5)" stroke-width="1" stroke-dasharray="4 3"/>
+                <rect x="88" y="18" width="24" height="12" fill="none" stroke="rgba(245,158,11,.8)" stroke-width="1.5" rx="2"/>
+                <circle cx="100" cy="24" r="2" fill="rgba(245,158,11,.9)"/>
+                <circle cx="100" cy="50" r="3" fill="rgba(245,158,11,.6)">
+                  <animate attributeName="cy" values="30;72" dur="2s" repeatCount="indefinite"/>
+                  <animate attributeName="opacity" values="1;0" dur="2s" repeatCount="indefinite"/>
+                </circle>
+              </svg>
+            </div>
+
+            <div class="oc-features">
+              <div class="oc-feature">✓ Independent Row/Column/Schema Monitoring</div>
+              <div class="oc-feature">✓ Custom SQL & Table-level Lineage</div>
+            </div>
+
+            <button class="btn-deploy" id="btn-deploy">★ DEPLOY OBSERVABILITY</button>
+          </div>
+
+          <!-- Monitor log (appears after deploy) -->
+          <div class="monitor-log" id="monitor-log">
+            <div class="ml-header">
+              <span class="ml-dot"></span>
+              ASTRO OBSERVE : LIVE ALERTS
+            </div>
+            <div class="ml-body" id="ml-body"></div>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="hand-section" style="opacity: 0.3; pointer-events: none; filter: grayscale(1);">
+        <div class="hand-label">OPERATORS OFFLINE : SCHEDULER UNREACHABLE</div>
+        <div class="hand-cards">
+          <div class="hand-card"><img src="images/SQLCheckOperator.webp"></div>
+          <div class="hand-card"><img src="images/SQLTableCheckOperator.webp"></div>
+          <div class="hand-card"><img src="images/SQLColumnCheckOperator.webp"></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ─── TRUE WIN SCREEN ─── -->
+  <div id="screen-true-win" class="screen">
+    <div class="true-win-wrap">
+      <div class="tw-badge">PIPELINE SECURED ✓</div>
+      <h1 class="tw-title">Fully<br>Protected.</h1>
+      <p class="tw-sub">
+        Your Dag-level operators blocked the bad data. When Airflow went down, Astro Observe had your back.
+      </p>
+      <div class="tw-layers">
+        <div class="tw-layer">
+          <span class="tw-layer-icon">✓</span>
+          <div>
+            <strong>Dag-level checks</strong>
+            <span>Catch issues before they break your production pipelines</span>
+          </div>
+        </div>
+        <div class="tw-layer tw-layer-observe">
+          <span class="tw-layer-icon">★</span>
+          <div>
+            <strong>Platform-level monitoring</strong>
+            <span>Keep an eye on your tables even when Airflow is offline</span>
+          </div>
+        </div>
+      </div>
+      <div class="tw-actions">
+        <a class="btn-primary" href="https://www.astronomer.io/docs/learn/data-quality" target="_blank">
+          Read the data quality guide →
+        </a>
+        <a class="btn-observe-link" href="https://www.astronomer.io/product/observe/" target="_blank">
+          Explore Astro Observe →
+        </a>
+        <button class="btn-ghost" id="btn-true-restart">Play Again</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Card preview panel : position:fixed, available from any screen -->
+  <div class="card-preview" id="card-preview">
+    <div class="cp-header">
+      <span class="cp-name" id="cp-name">...</span>
+      <span class="cp-star">✦</span>
+    </div>
+    <div class="cp-art" id="cp-art"></div>
+    <div class="cp-banner">
+      <span class="cp-tagline" id="cp-tagline">...</span>
+    </div>
+    <div class="cp-code" id="cp-code">...</div>
+    <div class="cp-stats" id="cp-stats"></div>
+    <div class="cp-counters" id="cp-counters">...</div>
+  </div>
+
+  <!-- Global footer : visible on all screens -->
+  <footer class="global-footer">
+    <span class="footer-label">Want to go deeper?</span>
+    <a class="footer-link" href="https://www.astronomer.io/docs/learn/data-quality" target="_blank" rel="noopener">
+      Data Quality with Airflow : Full Guide →
+    </a>
+  </footer>
+
+  <script src="game.js"></script>
+</body>
+</html>
