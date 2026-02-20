@@ -242,19 +242,22 @@ body {
 .reveal-card {
   width: clamp(90px, 13vw, 130px);
   cursor: pointer;
-  opacity: 0;
-  transform: translateY(30px) scale(.95);
-  animation: revealCard .45s ease forwards;
-  transition: transform .2s ease, box-shadow .2s ease;
+  transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.25s ease;
   border-radius: 10px;
+  /* Use 'backwards' so it stays at the 0% state (opacity 0) during the delay,
+     but doesn't lock the 100% state after finishing, allowing :hover to work. */
+  animation: revealCardIn 0.45s ease backwards;
 }
 .reveal-card:hover {
-  transform: translateY(-6px) scale(1.06);
-  z-index: 10;
+  transform: translateY(-25px) scale(2.5);
+  z-index: 100;
+  box-shadow: 0 30px 90px rgba(0,0,0,0.9);
 }
 .reveal-card img { width: 100%; border-radius: 10px; box-shadow: 0 8px 28px rgba(0,0,0,.55); display: block; }
-@keyframes revealCard {
-  to { opacity: 1; transform: translateY(0) scale(1); }
+
+@keyframes revealCardIn {
+  from { opacity: 0; transform: translateY(30px) scale(0.9); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
 }
 
 .reveal-sub {
