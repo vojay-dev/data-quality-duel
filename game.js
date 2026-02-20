@@ -233,8 +233,11 @@ function isTouchPrimary() {
 }
 
 function showScreen(id) {
-  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-  document.getElementById(id).classList.add('active');
+  document.querySelectorAll('.screen').forEach(s => {
+    s.classList.remove('active');
+  });
+  const target = document.getElementById(id);
+  if (target) target.classList.add('active');
 }
 
 // Haptic feedback (mobile only, silent on desktop)
@@ -357,14 +360,25 @@ function showReveal() {
     div.className = 'reveal-card';
     div.style.animationDelay = `${i * 0.09}s`;
     div.innerHTML = `<img src="${card.image}" alt="${card.name}">`;
-    div.addEventListener('mouseenter', () => showCardPreview(card));
-    div.addEventListener('mouseleave', hideCardPreview);
-    
+
+    div.addEventListener('mouseenter', () => {
+      if (!isTouchPrimary()) showCardPreview(card);
+    });
+    div.addEventListener('mouseleave', () => {
+      if (!isTouchPrimary()) hideCardPreview();
+    });
+
     // Tap to show preview on mobile
     div.addEventListener('click', () => {
-      showCardPreview(card);
+      if (isTouchPrimary() && isMobileLayout()) {
+        document.querySelectorAll('.reveal-card').forEach(c => c.classList.remove('selected'));
+        div.classList.add('selected');
+        showCardPreview(card, { modal: true });
+      } else if (!isTouchPrimary()) {
+        showCardPreview(card);
+      }
     });
-    
+
     container.appendChild(div);
   });
 }
@@ -511,7 +525,7 @@ function updateHandLabel() {
 // Card currently shown in preview (used by the mobile PLAY button)
 let _previewCardId = null;
 
-function showCardPreview(card, { playable = false } = {}) {
+function showCardPreview(card, { playable = false, modal = false } = {}) {
   if (!card) return;
   _previewCardId = card.id;
   const preview = el('card-preview');
@@ -542,23 +556,25 @@ function showCardPreview(card, { playable = false } = {}) {
   if (existingBtn) existingBtn.remove();
   if (existingHint) existingHint.remove();
 
-  if (isMobileLayout() && playable) {
-    const playBtn = document.createElement('button');
-    playBtn.className = 'cp-play-btn';
-    playBtn.textContent = '▶  PLAY THIS CARD';
-    playBtn.addEventListener('click', () => {
-      const handCard = document.querySelector(`.hand-card[data-id="${card.id}"]`);
-      if (handCard) {
-        // Simulate a play — bypass selection check since user explicitly tapped PLAY
-        hideCardPreview();
-        playCardById(card.id, handCard, { clientX: window.innerWidth / 2, clientY: window.innerHeight / 2 });
-      }
-    });
-    preview.appendChild(playBtn);
+  if (isMobileLayout() && modal) {
+    if (playable) {
+      const playBtn = document.createElement('button');
+      playBtn.className = 'cp-play-btn';
+      playBtn.textContent = '▶  PLAY THIS CARD';
+      playBtn.addEventListener('click', () => {
+        const handCard = document.querySelector(`.hand-card[data-id="${card.id}"]`);
+        if (handCard) {
+          // Simulate a play — bypass selection check since user explicitly tapped PLAY
+          hideCardPreview();
+          playCardById(card.id, handCard, { clientX: window.innerWidth / 2, clientY: window.innerHeight / 2 });
+        }
+      });
+      preview.appendChild(playBtn);
+    }
 
     const hint = document.createElement('span');
     hint.className = 'cp-cancel-hint';
-    hint.textContent = 'tap backdrop to cancel';
+    hint.textContent = 'tap backdrop to close';
     hint.addEventListener('click', () => {
       hideCardPreview();
       if (el('screen-game')?.classList.contains('active')) updateHandLabel();
@@ -589,7 +605,7 @@ function showBackdrop() {
   bd.className = 'preview-backdrop';
   bd.addEventListener('click', () => {
     hideCardPreview();
-    document.querySelectorAll('.hand-card').forEach(c => c.classList.remove('selected'));
+    document.querySelectorAll('.hand-card, .reveal-card').forEach(c => c.classList.remove('selected'));
     if (el('screen-game')?.classList.contains('active')) updateHandLabel();
   });
   document.body.appendChild(bd);
@@ -693,7 +709,7 @@ function playCard(cardId, cardEl, event) {
       // Deselect others, select this card, show preview sheet
       document.querySelectorAll('.hand-card').forEach(c => c.classList.remove('selected'));
       cardEl.classList.add('selected');
-      showCardPreview(getCard(cardId), { playable: true });
+      showCardPreview(getCard(cardId), { playable: true, modal: true });
       haptic(30);
       el('hand-label').textContent = 'TAP ▶ PLAY TO USE THIS CARD';
       return;

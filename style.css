@@ -23,7 +23,12 @@
 }
 
 /* ─── Reset & base ─── */
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  -webkit-tap-highlight-color: transparent;
+}
 
 body {
   font-family: 'Space Grotesk', sans-serif;
@@ -46,8 +51,8 @@ body::before {
 }
 
 /* ─── Screens ─── */
-.screen { display: none; min-height: 100vh; }
-.screen.active { display: flex; flex-direction: column; align-items: center; justify-content: center; }
+.screen { display: none; min-height: 100vh; width: 100%; position: relative; overflow: hidden; }
+.screen.active { display: flex; flex-direction: column; align-items: center; justify-content: flex-start; }
 
 /* ─── Buttons ─── */
 .btn-primary {
@@ -2086,22 +2091,38 @@ img.shaking { animation: imgShake .35s ease; }
   /* Hand section: always at bottom, never scrolls */
   .hand-section {
     flex-shrink: 0;
-    padding-top: 10px;
+    padding-top: 0;
     padding-bottom: 0;
-    background: linear-gradient(to bottom, transparent, rgba(30,34,53,.6) 20%);
+    border-top: none;
+    background: none;
   }
 
   /* Cards: fill the row evenly, min touch target ~44px */
   .hand-cards {
-    gap: clamp(4px, 1.2vw, 10px);
-    padding: 6px 2px 0;
-    overflow-x: auto;
+    gap: clamp(4px, 1.2vw, 8px);
+    padding: 16px 6px 32px; /* massive bottom padding for clear USES badge separation */
+    overflow-x: visible; /* show all cards, no side clipping */
     overflow-y: visible;
-    scrollbar-width: none;
+    flex-wrap: nowrap;
+    justify-content: center;
   }
   .hand-cards::-webkit-scrollbar { display: none; }
 
-  .hand-card { width: clamp(62px, 14.5vw, 102px); }
+  .hand-card {
+    width: clamp(52px, 15vw, 102px);
+  }
+
+  /* Ensure badges aren't cut off on mobile */
+  .card-use-counter {
+    bottom: -18px;
+    font-size: .5rem;
+    padding: 2px 5px;
+    background: rgba(30, 34, 53, 0.95);
+    border-color: rgba(139, 92, 246, 0.4);
+  }
+  .card-state-label.miss {
+    font-size: .7rem;
+  }
 
   /* Selected card: strong visual confirmation */
   .hand-card.selected {
@@ -2184,9 +2205,9 @@ img.shaking { animation: imgShake .35s ease; }
   .preview-backdrop {
     position: fixed;
     inset: 0;
-    background: rgba(0, 0, 0, 0.55);
+    background: rgba(0, 0, 0, 0.65);
     z-index: 599;
-    backdrop-filter: blur(2px);
+    backdrop-filter: blur(8px);
     animation: backdropIn .2s ease;
   }
   @keyframes backdropIn {
@@ -2195,13 +2216,36 @@ img.shaking { animation: imgShake .35s ease; }
   }
 
   /* Observe / Twist screens */
-  .obs-arena { flex-direction: column; }
-  .observe-card { width: 100%; }
-  .twist-arena { flex-direction: column; gap: 16px; }
-  .obs-header { flex-direction: column; }
+  #screen-observe.active, #screen-game.active, #screen-twist.active {
+    justify-content: flex-start;
+    overflow-y: auto;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
+  }
+  #screen-observe .game-layout, #screen-twist .game-layout { height: auto; min-height: 100vh; }
+  #screen-observe .game-arena, #screen-twist .game-arena { overflow-y: visible; flex: none; }
+
+  .obs-arena { flex-direction: column; align-items: center; }
+  .observe-card { width: 100%; max-width: 320px; }
+  .twist-arena { flex-direction: column; gap: 24px; align-items: center; }
+  .terminal { width: 100%; }
+  .obs-header { flex-direction: column; align-items: center; text-align: center; }
 
   /* Reveal screen: bigger cards for easier inspection */
-  .reveal-card { width: clamp(90px, 26vw, 120px); }
+  .reveal-card {
+    width: clamp(90px, 26vw, 120px);
+    transition: transform .2s, box-shadow .2s;
+  }
+  @media (hover: hover) {
+    .reveal-card:hover { transform: none; z-index: 10; }
+  }
+  .reveal-card.selected {
+    transform: translateY(-8px) scale(1.05);
+    z-index: 10;
+  }
+  .reveal-card.selected img {
+    box-shadow: 0 0 0 2px var(--purple-light), 0 10px 30px rgba(0,0,0,0.6);
+  }
   .reveal-cards { gap: clamp(6px, 1.5vw, 12px); }
 
   /* Footer */
@@ -2214,7 +2258,7 @@ img.shaking { animation: imgShake .35s ease; }
 
   /* Win/twist screens: full-bleed comfortable padding */
   .win-wrap, .true-win-wrap { padding: 32px 20px 80px; }
-  .twist-wrap { padding: 24px 16px; gap: 16px; }
+  .twist-wrap { padding: 24px 16px 120px; gap: 24px; }
 }
 
 /* Mobile preview slide animation (bottom sheet) */
