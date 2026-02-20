@@ -44,6 +44,8 @@ body {
 
 /* ─── Buttons ─── */
 .btn-primary {
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
   background: var(--purple);
   color: #fff;
   border: none;
@@ -57,10 +59,12 @@ body {
   transition: background .2s, transform .1s, box-shadow .2s;
   box-shadow: 0 4px 20px var(--glow-purple);
 }
-.btn-primary:hover {
-  background: var(--purple-dark);
-  transform: translateY(-2px);
-  box-shadow: 0 6px 28px var(--glow-purple);
+@media (hover: hover) {
+  .btn-primary:hover {
+    background: var(--purple-dark);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 28px var(--glow-purple);
+  }
 }
 .btn-primary:active { transform: translateY(0); }
 
@@ -78,7 +82,9 @@ body {
   transition: background .2s, transform .1s;
   align-self: flex-start;
 }
-.btn-secondary:hover { background: rgba(139,92,246,.15); transform: translateY(-1px); }
+@media (hover: hover) {
+  .btn-secondary:hover { background: rgba(139,92,246,.15); transform: translateY(-1px); }
+}
 
 .btn-link {
   color: var(--text-dim);
@@ -88,7 +94,9 @@ body {
   padding-bottom: 2px;
   transition: color .2s;
 }
-.btn-link:hover { color: var(--text); }
+@media (hover: hover) {
+  .btn-link:hover { color: var(--text); }
+}
 
 /* ─── INTRO SCREEN ─── */
 .intro-wrap {
@@ -178,7 +186,9 @@ body {
   transition: transform .3s, filter .3s;
   filter: drop-shadow(0 12px 40px rgba(139,92,246,.4));
 }
-.booster-img:hover { transform: scale(1.04) rotate(-1deg); }
+@media (hover: hover) {
+  .booster-img:hover { transform: scale(1.04) rotate(-1deg); }
+}
 .booster-img.opening { animation: packOpen .45s ease forwards; }
 
 @keyframes packOpen {
@@ -240,6 +250,8 @@ body {
 }
 
 .reveal-card {
+  user-select: none;
+  -webkit-touch-callout: none;
   width: clamp(90px, 13vw, 130px);
   cursor: pointer;
   transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.25s ease;
@@ -248,10 +260,12 @@ body {
      but doesn't lock the 100% state after finishing, allowing :hover to work. */
   animation: revealCardIn 0.45s ease backwards;
 }
-.reveal-card:hover {
-  transform: translateY(-25px) scale(2.5);
-  z-index: 100;
-  box-shadow: 0 30px 90px rgba(0,0,0,0.9);
+@media (hover: hover) {
+  .reveal-card:hover {
+    transform: translateY(-25px) scale(2.5);
+    z-index: 100;
+    box-shadow: 0 30px 90px rgba(0,0,0,0.9);
+  }
 }
 .reveal-card img { width: 100%; border-radius: 10px; box-shadow: 0 8px 28px rgba(0,0,0,.55); display: block; }
 
@@ -610,23 +624,23 @@ body {
 .card-preview {
   display: none;
   position: fixed;
-  bottom: 170px;  /* sits above the hand */
+  bottom: clamp(160px, 25vh, 220px);
   left: 50%;
   transform: translateX(-50%);
-  width: 280px;
+  width: min(320px, 92vw);
   background: var(--navy-mid);
   border: 1px solid var(--navy-border);
   border-radius: 12px;
   overflow: hidden;
-  box-shadow: 0 12px 40px rgba(0,0,0,.7), 0 0 0 1px rgba(139,92,246,.15);
-  z-index: 200;
+  box-shadow: 0 12px 40px rgba(0,0,0,.7), 0 0 0 1px rgba(139,92,246,0.2);
+  z-index: 500;
   animation: previewIn .15s ease;
   pointer-events: none;
 }
 .card-preview.visible { display: block; }
 
 @keyframes previewIn {
-  from { opacity: 0; transform: translateX(-50%) translateY(8px) scale(.97); }
+  from { opacity: 0; transform: translateX(-50%) translateY(12px) scale(.95); }
   to   { opacity: 1; transform: translateX(-50%) translateY(0) scale(1); }
 }
 
@@ -751,7 +765,8 @@ body {
   font-size: .6rem;
   letter-spacing: .1em;
   color: var(--text-dim);
-  margin-bottom: 10px;
+  margin-top: 24px;
+  margin-bottom: 44px; /* clears the 38px footer with room */
   text-align: center;
   min-height: 1.2em;
   transition: color .2s;
@@ -763,11 +778,14 @@ body {
   justify-content: center;
   /* overflow visible is critical : DO NOT set overflow-x: auto here */
   overflow: visible;
-  padding: 8px 4px 52px; /* 52px clears the 38px footer with breathing room */
+  padding: 8px 4px 0;
 }
 
 /* Individual hand card */
 .hand-card {
+  user-select: none;
+  -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: transparent;
   flex-shrink: 0;
   width: 108px;
   cursor: pointer;
@@ -801,11 +819,22 @@ body {
 }
 
 /* Hover lift : only for playable cards */
-.hand-card:not(.played):not(.tried):not(.disabled):hover {
+@media (hover: hover) {
+  .hand-card:not(.played):not(.tried):not(.disabled):hover {
+    transform: translateY(-36px) scale(1.1);
+    z-index: 50;
+  }
+  .hand-card:not(.played):not(.tried):not(.disabled):hover img {
+    box-shadow: 0 14px 32px rgba(139,92,246,.5);
+  }
+}
+
+/* Selected state (for mobile / touch) */
+.hand-card.selected {
   transform: translateY(-36px) scale(1.1);
   z-index: 50;
 }
-.hand-card:not(.played):not(.tried):not(.disabled):hover img {
+.hand-card.selected img {
   box-shadow: 0 14px 32px rgba(139,92,246,.5);
 }
 
@@ -1305,9 +1334,11 @@ img.shaking { animation: imgShake .35s ease; }
   transition: box-shadow .4s, transform .3s;
   position: relative;
 }
-.observe-card:hover {
-  box-shadow: 0 12px 48px rgba(0,0,0,.7), 0 0 60px rgba(245,158,11,.25);
-  transform: translateY(-4px);
+@media (hover: hover) {
+  .observe-card:hover {
+    box-shadow: 0 12px 48px rgba(0,0,0,.7), 0 0 60px rgba(245,158,11,.25);
+    transform: translateY(-4px);
+  }
 }
 .observe-card.deployed {
   animation: cardDeployed .6s ease;
@@ -1435,10 +1466,12 @@ img.shaking { animation: imgShake .35s ease; }
   transition: background .2s, transform .1s, box-shadow .2s;
   box-shadow: 0 4px 20px var(--glow-gold);
 }
-.btn-deploy:hover:not(:disabled) {
-  background: var(--gold-dark);
-  transform: translateY(-2px);
-  box-shadow: 0 6px 28px var(--glow-gold);
+@media (hover: hover) {
+  .btn-deploy:hover:not(:disabled) {
+    background: var(--gold-dark);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 28px var(--glow-gold);
+  }
 }
 .btn-deploy:disabled {
   opacity: .6;
@@ -1636,9 +1669,11 @@ img.shaking { animation: imgShake .35s ease; }
   z-index: 2;
   box-shadow: 0 2px 8px rgba(0,0,0,.4);
 }
-.hand-card:hover .card-use-counter {
-  color: var(--purple-light);
-  border-color: var(--purple);
+@media (hover: hover) {
+  .hand-card:hover .card-use-counter {
+    color: var(--purple-light);
+    border-color: var(--purple);
+  }
 }
 
 /* ─── Custom Scrollbars ─── */
@@ -1714,9 +1749,11 @@ img.shaking { animation: imgShake .35s ease; }
 
 /* Hover: subtle lift before opening */
 .css-pack-container:not(.opened) { transition: filter .3s; }
-.css-pack-container:not(.opened):hover .css-pack {
-  transform: scale(1.04) rotate(-1deg);
-  transition: transform .3s ease;
+@media (hover: hover) {
+  .css-pack-container:not(.opened):hover .css-pack {
+    transform: scale(1.04) rotate(-1deg);
+    transition: transform .3s ease;
+  }
 }
 
 .css-pack {
@@ -1971,19 +2008,26 @@ img.shaking { animation: imgShake .35s ease; }
 
 /* Phone */
 @media (max-width: 700px) {
-  .game-arena { flex-direction: column; gap: 12px; }
-  .monster-col { width: 100%; flex-direction: row; justify-content: flex-start; align-items: center; gap: 16px; padding-left: 8px; }
-  .game-monster { width: 80px; }
-  .hand-card { width: clamp(72px, 14vw, 100px); }
-  .hand-cards { gap: 6px; }
-  .card-preview { width: min(260px, 90vw); bottom: 52px; }
+  .game-layout { padding: 0 12px 12px; }
+  .game-arena { flex-direction: column; gap: 12px; flex: 1; }
+  .monster-col { width: 100%; flex-direction: row; justify-content: center; align-items: center; gap: 16px; padding: 0; }
+  .monster-hp-wrap { align-items: flex-start; }
+  .game-monster { width: clamp(60px, 15vw, 90px); }
+  .hand-card { width: clamp(60px, 14vw, 100px); }
+  .hand-cards { gap: clamp(4px, 1vw, 10px); padding-bottom: 0; }
+  .card-preview { 
+    width: min(340px, 94vw); 
+    bottom: 280px; 
+    z-index: 600; 
+    pointer-events: none; /* Allow taps to pass through to cards below */
+  }
   .obs-arena { flex-direction: column; }
   .observe-card { width: 100%; }
   .twist-arena { flex-direction: column; }
   .obs-header { flex-direction: column; }
   .reveal-card { width: clamp(80px, 25vw, 110px); }
   .global-footer { gap: 8px; }
-  .footer-label { display: none; } /* hide "Want to go deeper?" on small screens */
+  .footer-label { display: none; }
 }
 
 /* Very small phones */
@@ -1996,6 +2040,7 @@ img.shaking { animation: imgShake .35s ease; }
   .game-topbar { flex-direction: column; gap: 4px; padding: 8px 12px; }
   .reveal-cards { gap: 6px; }
   .reveal-card { width: clamp(72px, 28vw, 100px); }
+  .card-preview { bottom: 240px; }
   .css-pack-container, .css-pack { width: 160px; height: 272px; }
   .pack-top  { clip-path: polygon(0 0, 160px 0, 160px 72px, 140px 65px, 118px 76px, 94px 62px, 70px 74px, 46px 63px, 22px 75px, 0 68px); }
   .pack-bottom { clip-path: polygon(0 68px, 22px 75px, 46px 63px, 70px 74px, 94px 62px, 118px 76px, 140px 65px, 160px 72px, 160px 272px, 0 272px); }

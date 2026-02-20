@@ -325,6 +325,12 @@ function showReveal() {
     div.innerHTML = `<img src="${card.image}" alt="${card.name}">`;
     div.addEventListener('mouseenter', () => showCardPreview(card));
     div.addEventListener('mouseleave', hideCardPreview);
+    
+    // Tap to show preview on mobile
+    div.addEventListener('click', () => {
+      showCardPreview(card);
+    });
+    
     container.appendChild(div);
   });
 }
@@ -446,37 +452,59 @@ function updateHandLabel() {
 // ─── CSS Card Preview ─────────────────────────────────────────────────────────
 
 function showCardPreview(card) {
+  if (!card) return;
   const preview = el('card-preview');
 
   el('cp-name').textContent = card.name;
   el('cp-art').innerHTML = CARD_ART[card.id] || '';
-  el('cp-tagline').textContent = card.tagline.toUpperCase();
-  el('cp-code').textContent = card.code;
-  el('cp-counters').textContent = card.countersLabel;
+  el('cp-tagline').textContent = (card.tagline || '').toUpperCase();
+  el('cp-code').textContent = card.code || '';
+  el('cp-counters').textContent = card.countersLabel || '';
 
   // Stat bars
   const statsEl = el('cp-stats');
-  statsEl.innerHTML = ['range', 'signal', 'setup'].map(stat => {
-    const val = card[stat];
-    const pct = (val / 10) * 100;
-    return `<div class="cp-stat">
-      <span class="cp-stat-label">${stat.toUpperCase()}</span>
-      <div class="cp-stat-bar"><div class="cp-stat-fill" style="width:${pct}%"></div></div>
-      <span class="cp-stat-num">${val}</span>
-    </div>`;
-  }).join('');
+  if (statsEl) {
+    statsEl.innerHTML = ['range', 'signal', 'setup'].map(stat => {
+      const val = card[stat] || 0;
+      const pct = (val / 10) * 100;
+      return `<div class="cp-stat">
+        <span class="cp-stat-label">${stat.toUpperCase()}</span>
+        <div class="cp-stat-bar"><div class="cp-stat-fill" style="width:${pct}%"></div></div>
+        <span class="cp-stat-num">${val}</span>
+      </div>`;
+    }).join('');
+  }
 
   preview.classList.add('visible');
+  preview.style.display = 'block'; // force visibility
 }
 
 function hideCardPreview() {
-  el('card-preview').classList.remove('visible');
+  const preview = el('card-preview');
+  preview.classList.remove('visible');
+  preview.style.display = 'none';
 }
 
 // ─── Play a card ──────────────────────────────────────────────────────────────
 
 function playCard(cardId, cardEl, event) {
   if (state.roundResolved) return;
+
+  // Mobile/Touch: First tap selects and shows preview, second tap plays.
+  const isSelected = cardEl.classList.contains('selected');
+  const isTouch = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+
+  if (isTouch && !isSelected) {
+    // Deselect others
+    document.querySelectorAll('.hand-card').forEach(c => c.classList.remove('selected'));
+    // Select this one
+    cardEl.classList.add('selected');
+    showCardPreview(getCard(cardId));
+    
+    // Update label to hint at second tap
+    el('hand-label').textContent = 'TAP AGAIN TO PLAY';
+    return;
+  }
 
   const card = getCard(cardId);
   const attack = state.attackOrder[state.round];
