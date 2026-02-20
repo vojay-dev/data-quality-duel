@@ -413,7 +413,7 @@ function renderHP() {
   for (let i = 0; i < 6; i++) {
     const span = document.createElement('span');
     span.className = `heart ${i < state.hp ? 'full' : 'empty'}`;
-    span.textContent = '♥';
+    span.textContent = '♥\uFE0E';
     span.dataset.idx = i;
     container.appendChild(span);
   }
@@ -472,7 +472,7 @@ function renderHand() {
       labelHtml = `<div class="card-use-counter">USES: ${card.useCount}</div>`;
     }
     if (isTried) {
-      labelHtml += '<div class="card-state-label miss">✗</div>';
+      labelHtml += '<div class="card-state-label miss">✗\uFE0E</div>';
     }
 
     div.innerHTML = `<img src="${card.image}" alt="${card.name}">${labelHtml}`;
@@ -560,7 +560,7 @@ function showCardPreview(card, { playable = false, modal = false } = {}) {
     if (playable) {
       const playBtn = document.createElement('button');
       playBtn.className = 'cp-play-btn';
-      playBtn.textContent = '▶  PLAY THIS CARD';
+      playBtn.textContent = '▶\uFE0E  PLAY THIS CARD';
       playBtn.addEventListener('click', () => {
         const handCard = document.querySelector(`.hand-card[data-id="${card.id}"]`);
         if (handCard) {
@@ -711,7 +711,7 @@ function playCard(cardId, cardEl, event) {
       cardEl.classList.add('selected');
       showCardPreview(getCard(cardId), { playable: true, modal: true });
       haptic(30);
-      el('hand-label').textContent = 'TAP ▶ PLAY TO USE THIS CARD';
+      el('hand-label').textContent = 'TAP ▶\uFE0E PLAY TO USE THIS CARD';
       return;
     }
     // Second tap on the already-selected card → play it (fallthrough)
@@ -756,7 +756,7 @@ function showResult(isPerfect, isAlt, card, attack) {
   cardNameEl.textContent = card.name;
 
   if (isPerfect) {
-    badge.textContent = '⚡ CRITICAL CHECK!';
+    badge.textContent = '⚡\uFE0E CRITICAL CHECK!';
     badge.className = 'result-badge critical';
     const prefix = state.roundLog.at(-1).triedCount > 0
       ? `Found it after ${state.roundLog.at(-1).triedCount} wrong attempt${state.roundLog.at(-1).triedCount > 1 ? 's' : ''}. `
@@ -764,7 +764,7 @@ function showResult(isPerfect, isAlt, card, attack) {
     textEl.textContent = prefix + 'This is exactly the right operator for this attack.';
     whyEl.textContent = attack.why;
   } else {
-    badge.textContent = '✓ Acceptable : not optimal';
+    badge.textContent = '✓\uFE0E Acceptable : not optimal';
     badge.className = 'result-badge alt';
     const bestCard = getCard(attack.bestCard);
     textEl.textContent = `${card.name} can handle this, but ${bestCard.name} is the sharper tool here.`;
@@ -815,7 +815,7 @@ function showWin() {
     const card = getCard(entry.cardId);
     const row = document.createElement('div');
     row.className = `recap-row ${entry.isPerfect ? 'hit' : 'miss'}`;
-    const icon = entry.isPerfect ? '⚡' : entry.isAlt ? '✓' : '~';
+    const icon = entry.isPerfect ? '⚡\uFE0E' : entry.isAlt ? '✓\uFE0E' : '~';
     const triedNote = entry.triedCount > 0 ? ` <span class="recap-tries">(${entry.triedCount} wrong first)</span>` : '';
     row.innerHTML = `
       <span class="recap-attack">${entry.attackName}</span>
@@ -928,7 +928,7 @@ function showObserveFight() {
 }
 
 function renderObsHP() {
-  el('obs-hp').textContent = Array.from({ length: 3 }, (_, i) => i < obsHp ? '♥' : '♡').join(' ');
+  el('obs-hp').textContent = Array.from({ length: 3 }, (_, i) => i < obsHp ? '♥\uFE0E' : '♡\uFE0E').join(' ');
 }
 
 const MONITOR_ALERTS = [
