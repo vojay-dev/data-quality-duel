@@ -52,7 +52,7 @@ body::before {
 
 /* ─── Screens ─── */
 .screen { display: none; min-height: 100vh; width: 100%; position: relative; overflow: hidden; }
-.screen.active { display: flex; flex-direction: column; align-items: center; justify-content: flex-start; }
+.screen.active { display: flex; flex-direction: column; align-items: center; justify-content: center; }
 
 /* ─── Buttons ─── */
 .btn-primary {
@@ -2215,8 +2215,8 @@ img.shaking { animation: imgShake .35s ease; }
     to   { opacity: 1; }
   }
 
-  /* Observe / Twist screens */
-  #screen-observe.active, #screen-game.active, #screen-twist.active {
+  /* Observe / Twist / Win screens */
+  #screen-observe.active, #screen-game.active, #screen-twist.active, #screen-win.active, #screen-true-win.active {
     justify-content: flex-start;
     overflow-y: auto;
     overflow-x: hidden;
@@ -2257,7 +2257,7 @@ img.shaking { animation: imgShake .35s ease; }
   .reveal-sub-mobile  { display: block; }
 
   /* Win/twist screens: full-bleed comfortable padding */
-  .win-wrap, .true-win-wrap { padding: 32px 20px 80px; }
+  .win-wrap, .true-win-wrap { padding: 32px 20px 120px; }
   .twist-wrap { padding: 24px 16px 120px; gap: 24px; }
 }
 
