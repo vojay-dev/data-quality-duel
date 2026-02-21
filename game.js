@@ -478,8 +478,12 @@ function renderHand() {
     div.innerHTML = `<img src="${card.image}" alt="${card.name}">${labelHtml}`;
 
     // Hover → show CSS card preview
-    div.addEventListener('mouseenter', () => showCardPreview(card));
-    div.addEventListener('mouseleave', hideCardPreview);
+    div.addEventListener('mouseenter', () => {
+      if (!isTouchPrimary()) showCardPreview(card);
+    });
+    div.addEventListener('mouseleave', () => {
+      if (!isTouchPrimary()) hideCardPreview();
+    });
 
     // Click / touch → play card (only if playable)
     if (isPlayable) {
